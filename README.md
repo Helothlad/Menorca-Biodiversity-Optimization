@@ -1,34 +1,74 @@
-# Ecological Habitat & Corridor Optimization Engine
+# Optimization Project I: Menorca Wildlife Conservation 🦔🌲
 
-## Project Overview
-This project implements a spatial optimization pipeline designed to automate the expansion of animal habitats and the generation of ecological corridors. By integrating geospatial data processing with Mixed Integer Programming (MIP), the model balances conservation urgency, biological suitability, and financial cost to generate a mathematically optimal conservation plan for multiple species (e.g., *Oryctolagus cuniculus*, *Martes martes*) simultaneously.
+**Project Year:** 2025  
+**Course:** Optimization I  
+**Location:** Menorca, Spain (UNESCO Biosphere Reserve)
 
-To address the computational interdependence between habitat configuration and corridor costs, the solution utilizes a **Sequential Optimization Strategy**, decomposing the problem into two distinct, high-precision stages.
+## 📖 Project Overview
 
-## The Solution Architecture
+This project focuses on the mathematical optimization of conservation strategies for four key mammal species in Menorca. Using **Integer Linear Programming (ILP)** and geospatial data analysis, the project aims to allocate a limited budget to expand habitats and establish wildlife corridors, ensuring genetic connectivity and population stability.
 
-The final pipeline operates as a **Two-Stage Sequential Model** powered by the **CBC (Coin-OR Branch and Cut)** solver to ensure strict binary decision-making and spatial coherence.
+The solution is implemented in Python using **Google OR-Tools**, **GeoPandas**, and **Folium** for interactive visualization.
 
-### Stage 1: Value-Driven Habitat Expansion (Iterative Frontier)
-The first stage determines the optimal expansion of habitats based on land suitability scores and conservation targets.
+---
 
-* **Iterative Frontier Expansion:** To prevent "island fragmentation," the model mimics organic biological growth. It iteratively selects optimal cells only from the "valid frontier" (immediate neighbors) of existing populations.
-* **MIP Solver (CBC):** The engine uses Mixed Integer Programming to enforce strict binary variables (`BoolVar`), preventing fractional or "fuzzy" expansion results.
-* **Constraint Logic:**
-    * **Exclusivity:** Cells are strictly allocated to a single species to maintain structural integrity.
-    * **Predator-Prey Dynamics:** Hard constraints prevent the expansion of predators (Martens) into cells adjacent to prey (Rabbits/Mice).
-    * **Endangerment Multipliers:** Expansion targets are weighted by urgency; highly endangered species receive high-priority multipliers (e.g., 5x expansion for Rabbits).
+## 🐾 Focal Species
 
-### Stage 2: Global Connectivity & Topology Optimization
-Once habitats are fixed, the second stage generates the most cost-effective network of ecological corridors to connect isolated population groups.
+The project targets four species with distinct ecological requirements and interactions:
 
-* **One-to-Many Dijkstra Search:** The model uses a modified graph-traversal algorithm to connect isolated habitat "islands" until a specific reduction in fragmentation is achieved.
-* **Shared Network Heuristic:** To maximize cost-efficiency, the model incentivizes "wildlife highways." Once a corridor cell is built for one species, it becomes a zero-cost traversal zone for others.
-* **Permutation Optimization:** To solve "Path Dependency" (where the order of species processing affects the global cost), the system simulates all possible permutation orders (e.g., Rabbit → Marten vs. Marten → Rabbit) and selects the sequence that yields the lowest global cost.
-* **Ecological Safety Rules:**
-    * **Forbidden Zones:** Corridors cannot be built over the existing habitats of other species.
-    * **Adjacency Recognition:** Zero-cost logic detects diagonally touching populations to prevent redundant bridge building.
-    * **Geometric Precision:** Logic enforces strict termination at habitat edges, preventing corridor overlap ("Landing Pad" fix).
+1.  **North African Hedgehog** (*Atelerix algirus*) - *Erizo moruno*
+    * *Habitat:* Scrubland, agricultural mosaics.
+2.  **European Pine Marten** (*Martes martes*) - *Marta*
+    * *Habitat:* Forests, rocky terrain.
+    * *Constraint:* Predator (cannot co-exist in the same cell with prey species in the model).
+3.  **Garden Dormouse** (*Eliomys quercinus*) - *Lirón careto*
+    * *Habitat:* Woodlands, orchards.
+    * *Constraint:* Prey for the Pine Marten.
+4.  **European Rabbit** (*Oryctolagus cuniculus*) - *Conejo europeo*
+    * *Habitat:* Open pastures, scrubland.
+    * *Constraint:* Prey for the Pine Marten.
 
-## Visualization Strategy
-The project utilizes a custom rendering engine built on **Shapely** and **Folium**. To visualize multi-species density and co-habitation on a single grid, grid cells are geometrically sliced into horizontal "stripes," allowing distinct color codes (Blue/Rabbits, Black/Martens, etc.) to coexist visually within the master grid while overlays highlight the corridor network.
+---
+
+## ⚙️ Mathematical Methodology
+
+The optimization problem is tackled in two distinct phases to manage computational complexity:
+
+### Phase 1: Habitat Expansion (The "Onion" Model)
+**Objective:** Expand existing colonies into optimal adjacent cells to meet population targets while minimizing cost.
+* **Algorithm:** Layered BFS ("Onion Layers") to limit the search space to $N$ steps from existing populations.
+* **Solver:** SCIP (via OR-Tools).
+* **Constraints:**
+    * **Budget:** Total expansion cost $\le$ Global Budget.
+    * **Connectivity:** New cells must be connected to an existing population source (Parent-Child logic).
+    * **Predator-Prey:** *Martes martes* cannot be placed in the same cell as *Eliomys* or *Oryctolagus*.
+    * **Suitability:** Species cannot expand into unsuitable terrain (e.g., Airports, Industrial zones).
+
+### Phase 2: Wildlife Corridors (Network Design)
+**Objective:** Connect isolated population clusters ("Islands") to ensure genetic diversity.
+* **Algorithm:** Virtual Source/Sink Flow Model (Approximation of the Steiner Tree problem).
+* **Logic:**
+    * Identifies isolated clusters of populations.
+    * Connects the largest cluster (Root) to the next largest clusters (Sinks).
+    * Minimizes the cost of land acquisition for corridors.
+* **Output:** Continuous paths of green "Corridor" cells connecting distinct habitats.
+
+---
+
+## 📊 Experiments & Benchmarking
+
+The project includes a rigorous experimental phase to evaluate solver performance:
+
+1.  **Statistical Significance:** Repeated runs (N=20) comparing **CBC** vs. **SCIP** solvers to account for variance in execution time.
+2.  **Scalability Analysis:** Testing the model against dataset subsets (20%, 40%, 60%, 80%, 100%) to measure time complexity growth.
+3.  **Hypothesis Testing:** T-Tests are applied to determine if one solver is statistically superior for this specific topology.
+
+---
+
+## 🛠️ Technology Stack
+
+* **Python 3.12+**
+* **Optimization:** `ortools` (Google Operations Research Tools)
+* **Geospatial:** `geopandas`, `shapely`
+* **Visualization:** `folium`, `matplotlib`, `seaborn`
+* **Data Manipulation:** `pandas`, `numpy`
